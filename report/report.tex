@@ -62,8 +62,7 @@ measurements.}
 
 \end{figure}
 
-\section{Background}
-\subsection{Level set method}
+\section{Level set method}
 The level set method involves the evolution of a function, called $\phi$,
 using an iterative scheme for numerical integration. The surface we wish to
 recover is represented as a constraint on $\phi$. Specifically, we define this
@@ -100,13 +99,13 @@ for computation
 
 We have yet to define the level set function $\phi$. One particularly
 attractive definition is the signed distance function $d(\mathbf{x})$, which
-gives the distance of a point to the surface and the sign: generally $d > 0$
-if the point $\mathbf{x}$ is outside and $d < 0$ if it is inside of the
-surface (assuming it is a closed surface). Although all definitions of $\phi$
-are equally good theoretically, we prefer the signed distance function to
-avoid numerical instabilities and inaccuracies during computations. But even
-with this definition, $\phi$ will not remain a signed distance function and we
-may need a reinitialization procedure to keep the level set intact
+gives the distance of a point to the surface $\Gamma$ and the sign: generally
+$d > 0$ if the point $\mathbf{x}$ is outside and $d < 0$ if it is inside of
+the surface (assuming it is a closed surface). Although all definitions of
+$\phi$ are equally good theoretically, we prefer the signed distance function
+to avoid numerical instabilities and inaccuracies during computations. But
+even with this definition, $\phi$ will not remain a signed distance function
+and we may need a reinitialization procedure to keep the level set intact
 \cite{peng1999pde}.
 
 \subsection{Discrete time and space formulation}
@@ -124,8 +123,8 @@ and to produce the first-order approximation of the solution
 \begin{align}
   \phi^{n+1} &= \phi^{n} - \Delta t \, F |\nabla \phi|
 \end{align}
-However, we cannot use the finite difference to estimate reliably $\nabla
-\phi$ as this approximation will suffer from stability problems in the
+However, we cannot use this scheme to differentiate reliably in space to get
+$\nabla \phi$ as this approximation will suffer from stability problems in the
 presence of topological changes. Therefore, a different numerical procedure is
 needed.
 
@@ -136,22 +135,22 @@ central differences for approximating the first derivative, the scheme uses
 both the forward or the backward difference formul\ae. So if we assume $\phi$
 is discretized with respect to space on a uniform 3D grid where the entries
 are indexed by $\phi_{i,j,k}$ in the $x$, $y$ and $z$ directions respectively,
-then the first-order forward and backward difference formul$\ae$ in the $x$
+then the first-order forward and backward difference formul\ae\hspace in the $x$
 direction are
 \begin{align}
   D^{+x} &= \frac{\phi_{i+1,j,k} - \phi_{i,j,k}}{\Delta x} \\
   D^{-x} &= \frac{\phi_{i,j,k} - \phi_{i-1,j,k}}{\Delta x}
 \end{align}
-We have analoguous formul$\ae$ for other axes $y$ and $z$. Figure
-\ref{fig:fbd} illustrate the formul$\ae$ in the 2D case.
+We have analoguous formul\ae\hspace for other axes $y$ and $z$. Figure
+\ref{fig:fbd} illustrate the formul\ae\hspace in the 2D case.
 \begin{figure}
   \centering
   \includegraphics[width=0.45\textwidth]{img/upwind_grid.png}
   \caption{Illustration of the forward and backward differences over a 2D grid.}    
   \label{fig:fbd}
 \end{figure}
-These lead to a simple first-order scheme proposed by Osher and Sethian to
-estimate the level set evolution
+These lead to a simple first-order scheme proposed by Osher and Sethian
+\cite{osher1988fronts} to estimate the level set evolution
 \[
 \phi^{n+1}_{ijk} = \phi^{n}_{ijk} - \Delta t [ \max(F_{ijk}, 0)  \nabla^{+}\phi
   + \min(F_{ijk},0) \nabla^{-}\phi  ]
@@ -207,75 +206,75 @@ accuracy are required.
 \end{figure}
 
 \paragraph{Implementation}
-To implement the upwind scheme for the entire grid update, a few strategies
-can be used. In the contex of \textsc{MATLAB} or NumPy, it is recommended to
-compute forward and backward differences using entire rows at once. Also note
-that only one matrix is needed to store the results because the squared
-differences can be added on top of each other.  Furthermore for the edges of
-the grid, the inward row/column should be used in replacement if the
-difference exceeds the matrix.
+In our implementation, we used a few strategies to implement the simple upwind
+scheme. We used NumPy \cite{oliphant-2006-guide} dense matrix representation
+to store the discretized level set function. Also note that only one matrix
+was used to store the results because the squared differences can be added on
+top of each other.  Finally for the boundaries of the grid, we mirrored the
+inward row/column when the difference formul\ae\hspace required entries
+outside of the matrix.
 
-\subsubsection{Adaptive step size}
-Based on the work on level set stability and convergence by \textit{Chaudhury
-and Ramakrishnan} in \cite{chaudhury2007stability}, an adaptive step size can be
-easily implemented to make the evolution as fast as possible. Simply stated, the
-stability condition for the level set evolution is:
+\paragraph{Adaptive time steps}
+Based on the work on level set stability and convergence by Chaudhury and
+Ramakrishnan \cite{chaudhury2007stability}, we were able to set the size of
+time steps $\Delta t$ adaptively during the evolution to reach steady state as
+fast as possible. Simply stated, we use the convergence condition for the level
+set evolution
 \[
-F_{max} \cdot \Delta t \le \min(\Delta \mathbf{x})
+\Delta t \le \frac{\min(\Delta \mathbf{x})}{F_{max}}
 \]
-where $F_{max}$ is the maximum absolute speed of all the points on the grid and
-$\Delta \mathbf{x}$ is the grid spacing. Since we consider the grid size to be
-1 on all axes, we can adaptively set the step size to the following:
+where $F_{max}$ is the maximum absolute value of the entries of $F$ and
+$\Delta \mathbf{x}$ is the grid spacing. Then, the optimal time step is given
+by
 \[
-\Delta t \leftarrow \frac{q}{F_{max}}
+\Delta t_{opt} = c \frac{\min(\Delta \mathbf{x})}{F_{max}}
 \]
-where $q$ is a safety factor (it has a value slightly smaller than 1).
-
+where $c$ is a reasonable safety factor. We found value of $c$ between 0.8 and
+0.9 to work well in our implementation.
 
 \subsection{Forces governing surface evolution}
 
-Up until now, we have left one variable undefined, namely the force matrix $F$.
-The definition of this term very much depends on the application of the
-algorithm. For example, a popular approach used in 2d segmentation (for example
-in the context of medical imagery) is to employ (the magnitude of) gradients
-of an image to limit the evolution of the level set within a uniform region.
-However with a point cloud, the force must be derived differently. A formulation
-was specifically developped by Zhao in \cite{zhao2000implicit} and
-\cite{zhao2001fast} for shape reconstruction from an unorganized dataset of
-points. 
+Up until now, we have left one variable undefined, namely the force matrix
+$F$.  The definition of this term very much depends on the application of the
+level set method. For example, a popular approach used in 2D segmentation of
+medical images employs the magnitude of gradients of an image to limit the
+evolution of the level set within a uniform region.  However, the force must
+be derived differently to reconstruct a surface from a point cloud. A
+formulation was specifically developed by Zhao \cite{zhao2000implicit}
+\cite{zhao2001fast} for reconstruction from unorganized datasets.
 
-Stating his formulation upfront, we have:
+Stating his formulation upfront, we have
 \begin{align}
     \label{eq:force}
-    F = \nabla d(\mathbf{x}) \cdot \frac{\nabla \phi}{\| \nabla \phi \|}
-+ d(\mathbf{x}) \cdot (\nabla \cdot \frac{\nabla \phi}{\| \nabla \phi \|} )
+    F &= \nabla d(\mathbf{x}) \cdot \frac{\nabla \phi}{| \nabla \phi |} +
+    d(\mathbf{x}) \left(\nabla \cdot \frac{\nabla \phi}{|\nabla \phi|}
+    \right) \\
+    &= \nabla d(\mathbf{x}) \cdot \vec{n} + d(\mathbf{x})\kappa
 \end{align}
-where $d(\mathbf{x})$ is an unsigned distance function to the closest point in
-our dataset $S$.
-
-The role of this force is twofold: it simultaneously encourages smoothness in
-the level set and close fit to the data points which are attracting it.
+where $d(\mathbf{x})$ is the distance to the closest point in our dataset $S$
+to any point $\mathbf{x}$, \vec{n} is the unit normal vector to the level sets
+and $\kappa$ is the mean curvature. The effect of this force is twofold: it is
+simultaneously attracting the surface to the dataset while maintaining its
+smoothness.
 
 \subsubsection{Energy Functional}
-To understand where this force formulation comes from, we have to understand how
-the desired level set surface is derived from an energy functional $E(\Gamma)$.
-Without restating all the derivations, the functional essentially takes in the
-level set as its input and assesses its surface energy in terms of distance to
-$S$. More precisely, Zhao\cite{zhao2000implicit} defined it as follows:
-
+To understand where this force formulation comes from, we have to understand
+how the desired level set surface is derived from an energy functional.
+Without restating all the derivations, this functional essentially maps a
+surface to a value which assesses its quality in terms of its distance to
+$S$. More precisely, Zhao \cite{zhao2000implicit} defined it as follows
 \begin{align}
     \label{eq:functional}
-    E(\Gamma) = [\int_\Gamma d^p(\mathbf{x}) ds]^{1/p}
+    E(\Gamma) = \left[\int_\Gamma d^p(\mathbf{x}) ds\right]^{1/p}
 \end{align}
-
-where $ds$ is the surface area, and $p$ parametrizes the distance (or norm)
-function. For the level set to evolve to a local minimum of this energy
-functional, it has to flow according to a force which employs not only
-$d(\mathbf{x})$ but also the normal $\mathbf{N}$ to $\Gamma$ and the mean
-curvature $\kappa$ of $\Gamma$. In fact, in can be shown that the minimizer of
-\eqref{eq:functional} satisfies:
+where $ds$ is the surface area, and $p$ is a weighting parameter for the
+distance function---this is analogous to a $p$-norm. For the level set to
+evolve to a local minimum of this energy functional, it has to move according
+to a force which employs not only $d(\mathbf{x})$ but also the normal to
+$\Gamma$ and the mean curvature $\kappa$ of $\Gamma$. In fact, in can be shown
+that the minimizer, or steady state, of \eqref{eq:functional} satisfies:
 \[
-\nabla d(\mathbf{x}) \cdot \mathbf{n} + d(\mathbf{x}) \kappa = 0
+\nabla d(\mathbf{x}) \cdot \vec{n} + d(\mathbf{x}) \kappa = 0
 \]
 With these terms used in the force formulation, and with the evolution equation
 expressed for $\phi$, equation \eqref{eq:force} is obtained. (See \cite{zhao2000implicit},
