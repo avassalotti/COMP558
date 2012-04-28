@@ -257,7 +257,7 @@ and $\kappa$ is the mean curvature. The effect of this force is twofold: it is
 simultaneously attracting the surface to the dataset while maintaining its
 smoothness.
 
-\subsubsection{Energy Functional}
+\paragraph{Energy functional}
 To understand where this force formulation comes from, we have to understand
 how the desired level set surface is derived from an energy functional.
 Without restating all the derivations, this functional essentially maps a
@@ -268,24 +268,16 @@ $S$. More precisely, Zhao \cite{zhao2000implicit} defined it as follows
     E(\Gamma) = \left[\int_\Gamma d^p(\mathbf{x}) ds\right]^{1/p}
 \end{align}
 where $ds$ is the surface area, and $p$ is a weighting parameter for the
-distance function---this is analogous to a $p$-norm. For the level set to
-evolve to a local minimum of this energy functional, it has to move according
-to a force which employs not only $d(\mathbf{x})$ but also the normal to
-$\Gamma$ and the mean curvature $\kappa$ of $\Gamma$. In fact, in can be shown
-that the minimizer, or steady state, of \eqref{eq:functional} satisfies:
+distance function---which works analogously as for a $p$-norm. Assuming $p=1$,
+it can be shown that the deformed surface $\Gamma$ under $F$ will minimize
+(\ref{eq:functional}) when it reaches the steady state
 \[
 \nabla d(\mathbf{x}) \cdot \vec{n} + d(\mathbf{x}) \kappa = 0
 \]
-With these terms used in the force formulation, and with the evolution equation
-expressed for $\phi$, equation \eqref{eq:force} is obtained. (See \cite{zhao2000implicit},
-\cite{zhao2001fast} and \cite{savadjiev2003surface} for more detailed
-explanations.) The resulting level set evolution should then behave as an
-elastic membrane converging towards a minimal surface.
+For more detailed explanations, read \cite{zhao2000implicit},
+\cite{zhao2001fast} and \cite{savadjiev2003surface}.
 
-%\item Quantifies how $\Gamma$ corresponds to the data set, with a smoothness constraint
-%\item Has two global minima: $\Gamma = \Gamma_0$  and $\Gamma = \emptyset$.
-
-\subsubsection{Unsatisfactory local minimum}
+\paragraph{Unsatisfactory local minimum}
 \label{localmin}
 Note that the level set can reach an unsatisfactory local minimum if the initial
 value was not close enough to the final surface. As such, it is expected that
@@ -303,7 +295,9 @@ this methods results in some loss of details.
 
 \subsection{Source of errors}
 As stated earlier, numerical solutions for solving the level set equation can
-very easily become unstable.
+very easily become unstable. We found the sources of errors noted Sethian
+\cite{sethian2001evolution} to be representative of issues we found in our
+implementation
 \begin{itemize}
     \item \textbf{Reinitialization}: If reinitialization is used, the interface
         can be displaced to incoherent positions, affecting numerical accuracy
@@ -322,9 +316,8 @@ very easily become unstable.
 
 \section{Results}
 In order to implement of the level set evolution as described above, we first
-favored a 2d version implementation in Python (using NumPy, SciPy, Scikit-fmm
-(for solving the Eikonal equation) and Matplotlib. Here are our final 2d
-results.
+favored a 2D version implementation in Python (using a combination of NumPy,
+SciPy, Scikit and Matplotlib). Here we present our final 2D results.
 \begin{figure}[H]
   \centering
   \subfloat[Initial data set of
